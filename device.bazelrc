@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2025 Baylibre
+
+# Configuration for no GKI download - build from source
+build:no_download_gki --use_prebuilt_gki=false
+
+# Generic part for GKI
+build:download_gki --use_prebuilt_gki
+build:download_gki --use_signed_prebuilts
+
+# This is required for the graphics external module, since it refers to
+# internal headers (e.g. header files under drivers/)
+#
+# TODO: This should be removed eventually, as modules should only be referring
+# to public headers. References to internal headers may suggest that those
+# headers should be made public, instead of internal.
+build --allow_ddk_unsafe_headers
+
+# Enable support for starlark configuration language (.scl) files
+build --experimental_enable_scl_dialect
+
+
+build:ti --//:target_kernel_build=//private/devices/ti/am6x:ti
+build:ti --//private/devices/ti/am6x:target_build_config=//private/devices/ti/am6x:build.config.ti

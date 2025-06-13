@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# General bazel build file for the kernel build.
+# This package is to be symlinked to the root of the tree.
+
+filegroup(
+    name = "undefined_filegroup",
+    srcs = [
+    ],
+)
+
+label_flag(
+    name = "target_kernel_build",
+    build_setting_default = ":undefined_filegroup",
+    visibility = [
+        "//private/devices/ti:__subpackages__",
+        "//private/modules:__subpackages__",
+    ],
+)
+
+label_flag(
+    name = "target_kernel_headers",
+    build_setting_default = "//ti-linux-kernel:all_headers_aarch64",
+    visibility = [
+        "//private/devices/ti:__subpackages__",
+        "//private/modules:__subpackages__",
+    ],
+)

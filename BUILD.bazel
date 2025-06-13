@@ -1,0 +1,700 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+load(
+    "@bazel_skylib//lib:paths.bzl",
+    "paths",
+)
+load(
+    "@bazel_skylib//rules:write_file.bzl",
+    "write_file",
+)
+load(
+    "@rules_pkg//pkg:install.bzl",
+    "pkg_install",
+)
+load(
+    "@rules_pkg//pkg:mappings.bzl",
+    "pkg_files",
+    "strip_prefix",
+)
+load(
+    "//build/kernel/kleaf:kernel.bzl",
+    "dtbo",
+    "initramfs",
+    "kernel_abi",
+    "kernel_build",
+    "kernel_build_config",
+    "kernel_dtstree",
+    "kernel_modules_install",
+    "kernel_unstripped_modules_archive",
+    "merged_kernel_uapi_headers",
+    "system_dlkm_image",
+    "vendor_boot_image",
+    "vendor_dlkm_image",
+)
+
+load(
+    "//common:modules.bzl",
+    "get_gki_modules_list",
+    "get_gki_protected_modules_list",
+    "get_kunit_modules_list",
+)
+
+load(
+    ":bazel/constants.scl",
+    "KERNEL_DIR",
+)
+
+load(
+    ":bazel/merged_external_kernel_modules_uapi_headers.bzl",
+    "merged_external_kernel_modules_uapi_headers",
+)
+
+filegroup(
+    name = "ti_fragment",
+    srcs = [
+        "ti.fragment",
+    ],
+)
+
+filegroup(
+    name = "system_file_contexts",
+    srcs = [
+        "selinux/system_file_contexts",
+    ],
+)
+
+filegroup(
+    name = "file_contexts",
+    srcs = [
+        "selinux/file_contexts",
+    ],
+)
+
+# ti common modules load from system_dlkm.
+TI_COMMON_GKI_MODULES = [
+    m
+    for m in get_gki_modules_list("arm64")
+]
+# This list contains modules that are required for first stage init on all
+# TI based platforms, in addition to the modules in vendor_boot_modules.ti.
+TI_VENDOR_BOOT_MODULES = [
+    # keep sorted
+    "cma_heap.ko",
+    "cqhci.ko",
+    "display-connector.ko",
+    "drm_display_helper.ko",
+    "drm_dma_helper.ko",
+    "gpio-davinci.ko",
+    "i2c-mux-pca954x.ko",
+    "i2c-mux.ko",
+    "irq-ti-sci-inta.ko",
+    "irq-ti-sci-intr.ko",
+    "k3-psil-lib.ko",
+    "k3-ringacc.ko",
+    "k3-udma-glue.ko",
+    "k3-udma.ko",
+    "omap-mailbox.ko",
+    "optee-rng.ko",
+    "optee.ko",
+    "panel-ilitek-ili9881c.ko",
+    "panel-simple.ko",
+    "reset-ti-sci.ko",
+    "reset-ti-syscon.ko",
+    "rtc-ti-k3.ko",
+    "rti_wdt.ko",
+    "sci-clk.ko",
+    "sdhci_am654.ko",
+    "sii902x.ko",
+    "system_heap.ko",
+    "tee.ko",
+    "ti-msgmgr.ko",
+    "ti_sci.ko",
+    "ti_sci_pm_domains.ko",
+    "tidss.ko",
+]
+
+TI_VENDOR_DLKM_MODULES = [
+    # keep sorted
+    "8250_omap.ko",
+    "am65-cpts.ko",
+    "cdns-dphy-rx.ko",
+    "cdns-dphy.ko",
+    "cdns-dsi.ko",
+    "davinci_mdio.ko",
+    "dwc3-am62.ko",
+    "dwc3-haps.ko",
+    "dwc3-of-simple.ko",
+    "gpio-pca953x.ko",
+    "gpio-regulator.ko",
+    "i2c-dev.ko",
+    "i2c-omap.ko",
+    "icss_iep.ko",
+    "icssg-prueth.ko",
+    "icssg.ko",
+    "ili210x.ko",
+    "irq-pruss-intc.ko",
+    "irq-ti-sci-inta.ko",
+    "irq-ti-sci-intr.ko",
+    "ite-it66121.ko",
+    "j721e-csi2rx.ko",
+    "k3-cppi-desc-pool.ko",
+    "k3_bandgap.ko",
+    "k3_j72xx_bandgap.ko",
+    "leds-tlc591xx.ko",
+    "m_can.ko",
+    "m_can_platform.ko",
+    "mcrc64.ko",
+    "mdio-bitbang.ko",
+    "mdio-gpio.ko",
+    "mux-core.ko",
+    "mux-mmio.ko",
+    "omap_hwspinlock.ko",
+    "ov5640.ko",
+    "palmas-regulator.ko",
+    "palmas.ko",
+    "phy-cadence-torrent.ko",
+    "phy-can-transceiver.ko",
+    "phy-gmii-sel.ko",
+    "phy-j721e-wiz.ko",
+    "phy-omap-usb2.ko",
+    "pru_rproc.ko",
+    "pruss.ko",
+    "pwm-omap-dmtimer.ko",
+    "pwm-tiecap.ko",
+    "pwm-tiehrpwm.ko",
+    "rpi-panel-attiny-regulator.ko",
+    "rpmsg_ns.ko",
+    "rtc-bq32k.ko",
+    "sa2ul.ko",
+    "scmi_transport_optee.ko",
+    "snd-soc-audio-graph-card.ko",
+    "snd-soc-davinci-mcasp.ko",
+    "snd-soc-hdmi-codec.ko",
+    "snd-soc-pcm3168a-i2c.ko",
+    "snd-soc-pcm3168a.ko",
+    "snd-soc-simple-card-utils.ko",
+    "snd-soc-simple-card.ko",
+    "snd-soc-ti-edma.ko",
+    "snd-soc-ti-sdma.ko",
+    "snd-soc-ti-udma.ko",
+    "snd-soc-tlv320aic3x-i2c.ko",
+    "snd-soc-tlv320aic3x.ko",
+    "spi-cadence-quadspi.ko",
+    "syscon-clk.ko",
+    "tc358762.ko",
+    "ti-am65-cpsw-nuss.ko",
+    "ti-cpsw-proxy-client.ko",
+    "ti-ecap-capture.ko",
+    "ti-eqep.ko",
+    "ti_am335x_adc.ko",
+    "ti_am335x_tscadc.ko",
+    "ti_k3_common.ko",
+    "ti_k3_dsp_remoteproc.ko",
+    "ti_k3_m4_remoteproc.ko",
+    "ti_k3_r5_remoteproc.ko",
+    "tps65219-pwrbutton.ko",
+    "tps65219-regulator.ko",
+    "tps65219.ko",
+    "tps6594-core.ko",
+    "tps6594-esm.ko",
+    "tps6594-i2c.ko",
+    "tps6594-pfsm.ko",
+    "tps6594-regulator.ko",
+    "tps6598x.ko",
+    "wave5.ko",
+    "wl18xx.ko",
+    "wlcore.ko",
+    "wlcore_sdio.ko",
+]
+
+TI_IN_TREE_MODULES = [
+    # keep sorted
+    "crypto/crc64_iso3309_generic.ko",
+    "drivers/char/hw_random/optee-rng.ko",
+    "drivers/clk/keystone/sci-clk.ko",
+    "drivers/clk/keystone/syscon-clk.ko",
+    "drivers/counter/counter.ko",
+    "drivers/counter/ti-ecap-capture.ko",
+    "drivers/counter/ti-eqep.ko",
+    "drivers/cpufreq/cpufreq-dt.ko",
+    "drivers/crypto/sa2ul.ko",
+    "drivers/crypto/ti/mcrc64.ko",
+    "drivers/dma-buf/heaps/cma_heap.ko",
+    "drivers/dma-buf/heaps/system_heap.ko",
+    "drivers/dma/ti/k3-psil-lib.ko",
+    "drivers/dma/ti/k3-udma-glue.ko",
+    "drivers/dma/ti/k3-udma.ko",
+    "drivers/firmware/arm_scmi/transports/scmi_transport_optee.ko",
+    "drivers/firmware/ti_sci.ko",
+    "drivers/gpio/gpio-davinci.ko",
+    "drivers/gpio/gpio-pca953x.ko",
+    "drivers/gpio/gpio-regmap.ko",
+    "drivers/gpio/gpio-tps65219.ko",
+    "drivers/gpu/drm/bridge/cadence/cdns-dsi.ko",
+    "drivers/gpu/drm/bridge/display-connector.ko",
+    "drivers/gpu/drm/bridge/ite-it66121.ko",
+    "drivers/gpu/drm/bridge/sii902x.ko",
+    "drivers/gpu/drm/bridge/tc358762.ko",
+    "drivers/gpu/drm/display/drm_display_helper.ko",
+    "drivers/gpu/drm/drm_dma_helper.ko",
+    "drivers/gpu/drm/panel/panel-ilitek-ili9881c.ko",
+    "drivers/gpu/drm/panel/panel-simple.ko",
+    "drivers/gpu/drm/tidss/tidss.ko",
+    "drivers/hwspinlock/omap_hwspinlock.ko",
+    "drivers/i2c/busses/i2c-omap.ko",
+    "drivers/i2c/i2c-dev.ko",
+    "drivers/i2c/i2c-mux.ko",
+    "drivers/i2c/muxes/i2c-mux-pca954x.ko",
+    "drivers/iio/adc/ti_am335x_adc.ko",
+    "drivers/iio/buffer/kfifo_buf.ko",
+    "drivers/input/misc/tps65219-pwrbutton.ko",
+    "drivers/input/touchscreen/ili210x.ko",
+    "drivers/irqchip/irq-pruss-intc.ko",
+    "drivers/irqchip/irq-ti-sci-inta.ko",
+    "drivers/irqchip/irq-ti-sci-intr.ko",
+    "drivers/leds/leds-tlc591xx.ko",
+    "drivers/mailbox/omap-mailbox.ko",
+    "drivers/mailbox/ti-msgmgr.ko",
+    "drivers/media/i2c/ov5640.ko",
+    "drivers/media/platform/cadence/cdns-csi2rx.ko",
+    "drivers/media/platform/chips-media/wave5/wave5.ko",
+    "drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.ko",
+    "drivers/mfd/palmas.ko",
+    "drivers/mfd/ti_am335x_tscadc.ko",
+    "drivers/mfd/tps65219.ko",
+    "drivers/mfd/tps6594-core.ko",
+    "drivers/mfd/tps6594-i2c.ko",
+    "drivers/misc/tps6594-esm.ko",
+    "drivers/misc/tps6594-pfsm.ko",
+    "drivers/mmc/host/cqhci.ko",
+    "drivers/mmc/host/sdhci_am654.ko",
+    "drivers/mux/mux-core.ko",
+    "drivers/mux/mux-mmio.ko",
+    "drivers/net/can/m_can/m_can.ko",
+    "drivers/net/can/m_can/m_can_platform.ko",
+    "drivers/net/ethernet/ti/am65-cpts.ko",
+    "drivers/net/ethernet/ti/davinci_mdio.ko",
+    "drivers/net/ethernet/ti/icssg-prueth.ko",
+    "drivers/net/ethernet/ti/icssg.ko",
+    "drivers/net/ethernet/ti/icssg/icss_iep.ko",
+    "drivers/net/ethernet/ti/k3-cppi-desc-pool.ko",
+    "drivers/net/ethernet/ti/ti-am65-cpsw-nuss.ko",
+    "drivers/net/ethernet/ti/ti-cpsw-proxy-client.ko",
+    "drivers/net/mdio/mdio-bitbang.ko",
+    "drivers/net/mdio/mdio-gpio.ko",
+    "drivers/net/phy/dp83td510.ko",
+    "drivers/net/wireless/ti/cc33xx/cc33xx.ko",
+    "drivers/net/wireless/ti/cc33xx/cc33xx_sdio.ko",
+    "drivers/net/wireless/ti/wl18xx/wl18xx.ko",
+    "drivers/net/wireless/ti/wlcore/wlcore.ko",
+    "drivers/net/wireless/ti/wlcore/wlcore_sdio.ko",
+    "drivers/phy/cadence/cdns-dphy-rx.ko",
+    "drivers/phy/cadence/cdns-dphy.ko",
+    "drivers/phy/cadence/phy-cadence-sierra.ko",
+    "drivers/phy/cadence/phy-cadence-torrent.ko",
+    "drivers/phy/phy-can-transceiver.ko",
+    "drivers/phy/ti/phy-gmii-sel.ko",
+    "drivers/phy/ti/phy-j721e-wiz.ko",
+    "drivers/phy/ti/phy-omap-usb2.ko",
+    "drivers/pinctrl/pinctrl-tps6594.ko",
+    "drivers/pmdomain/ti/ti_sci_pm_domains.ko",
+    "drivers/pwm/pwm-omap-dmtimer.ko",
+    "drivers/pwm/pwm-tiecap.ko",
+    "drivers/pwm/pwm-tiehrpwm.ko",
+    "drivers/regulator/gpio-regulator.ko",
+    "drivers/regulator/palmas-regulator.ko",
+    "drivers/regulator/rpi-panel-attiny-regulator.ko",
+    "drivers/regulator/tps65219-regulator.ko",
+    "drivers/regulator/tps6594-regulator.ko",
+    "drivers/remoteproc/pru_rproc.ko",
+    "drivers/remoteproc/ti_k3_common.ko",
+    "drivers/remoteproc/ti_k3_dsp_remoteproc.ko",
+    "drivers/remoteproc/ti_k3_m4_remoteproc.ko",
+    "drivers/remoteproc/ti_k3_r5_remoteproc.ko",
+    "drivers/reset/reset-ti-sci.ko",
+    "drivers/reset/reset-ti-syscon.ko",
+    "drivers/rpmsg/rpmsg_ns.ko",
+    "drivers/rpmsg/virtio_rpmsg_bus.ko",
+    "drivers/rtc/rtc-bq32k.ko",
+    "drivers/rtc/rtc-ti-k3.ko",
+    "drivers/rtc/rtc-tps6594.ko",
+    "drivers/soc/ti/k3-ringacc.ko",
+    "drivers/soc/ti/pruss.ko",
+    "drivers/spi/spi-cadence-quadspi.ko",
+    "drivers/spi/spidev.ko",
+    "drivers/tee/optee/optee.ko",
+    "drivers/tee/tee.ko",
+    "drivers/thermal/k3_bandgap.ko",
+    "drivers/thermal/k3_j72xx_bandgap.ko",
+    "drivers/tty/serial/8250/8250_omap.ko",
+    "drivers/usb/dwc3/dwc3-am62.ko",
+    "drivers/usb/dwc3/dwc3-haps.ko",
+    "drivers/usb/dwc3/dwc3-of-simple.ko",
+    "drivers/usb/typec/tipd/tps6598x.ko",
+    "drivers/watchdog/rti_wdt.ko",
+    "lib/crc64.ko",
+    "net/hsr/hsr.ko",
+    "net/mac80211/mac80211.ko",
+    "net/sched/sch_mqprio_lib.ko",
+    "net/sched/sch_taprio.ko",
+    "net/wireless/cfg80211.ko",
+    "sound/soc/codecs/snd-soc-hdmi-codec.ko",
+    "sound/soc/codecs/snd-soc-pcm3168a-i2c.ko",
+    "sound/soc/codecs/snd-soc-pcm3168a.ko",
+    "sound/soc/codecs/snd-soc-tlv320aic3x-i2c.ko",
+    "sound/soc/codecs/snd-soc-tlv320aic3x.ko",
+    "sound/soc/generic/snd-soc-audio-graph-card.ko",
+    "sound/soc/generic/snd-soc-simple-card-utils.ko",
+    "sound/soc/generic/snd-soc-simple-card.ko",
+    "sound/soc/ti/snd-soc-davinci-mcasp.ko",
+    "sound/soc/ti/snd-soc-ti-edma.ko",
+    "sound/soc/ti/snd-soc-ti-sdma.ko",
+    "sound/soc/ti/snd-soc-ti-udma.ko",
+]
+
+TI_EXTERNAL_MODULES_TARGETS = [
+    # keep sorted
+    "//private/devices/ti/modules/imgtech-ddk-driver:am62p_imgtech_module",
+    "//private/devices/ti/modules/imgtech-ddk-driver:am62x_imgtech_module",
+]
+
+TI_EXTERNAL_MODULES_DDK_UAPI_HEADERS = [
+    # keep sorted
+    "//private/devices/ti/modules/imgtech-ddk-driver:imgtech_gpu_ddk_uapi_headers",
+]
+
+TI_DTBS = [
+    # AM62x/AM625 DTBs
+    "k3-am625-sk.dtb",
+    "k3-am625-beagleplay.dtb",
+    "k3-am62-lp-sk.dtb",
+    # AM62P DTBs
+    "k3-am62p5-sk.dtb",
+    # AM67A/J722S DTBs
+    "k3-j722s-evm.dtb",
+    "k3-am67a-beagley-ai.dtb",
+]
+
+TI_DTBOS = [
+    "k3-am62p5-sk-m2-cc3351.dtbo",
+    "k3-am62x-sk-csi2-ov5640.dtbo",
+    "k3-am62x-sk-csi2-tevi-ov5640.dtbo",
+    "k3-am62x-sk-hdmi-audio.dtbo",
+    "k3-am62x-sk-lpm-wkup-sources.dtbo",
+    "k3-am625-sk-microtips-mf101hie-panel.dtbo",
+    "k3-am625-sk-m2-cc3351.dtbo",
+    "k3-am625-sk-wl1837.dtbo",
+    "k3-am625-beagleplay-csi2-ov5640.dtbo",
+    "k3-am625-beagleplay-csi2-tevi-ov5640.dtbo",
+    "k3-am625-beagleplay-lincolntech-lcd185-panel.dtbo",
+    "k3-am62-lp-sk-microtips-mf101hie-panel.dtbo",
+    "k3-am62p5-sk-mcan.dtbo",
+    "k3-am62p5-sk-microtips-mf101hie-panel.dtbo",
+    "k3-am62p5-sk-dsi-rpi-7inch-panel.dtbo",
+    "k3-j722s-evm-csi2-quad-rpi-cam-imx219.dtbo",
+    "k3-j722s-evm-csi2-quad-tevi-ov5640.dtbo",
+    "k3-j722s-evm-dsi-rpi-7inch-panel.dtbo",
+    "k3-j722s-evm-fpdlink-fusion.dtbo",
+    "k3-j722s-evm-microtips-mf101hie-panel.dtbo",
+    "k3-j722s-evm-v3link-fusion.dtbo",
+    "k3-j722s-evm-pwm.dtbo",
+]
+
+dtbo_list = TI_DTBOS
+
+# Label `:target_build_config` can be set during build to override the ti.generated
+# build config and append additional sources, like a device-specific
+# build.config.<device> file.
+label_flag(
+    name = "target_build_config",
+    build_setting_default = ":build.config.ti.generated",
+    visibility = [
+        "//private/devices/ti:__subpackages__",
+    ],
+)
+
+kernel_build_config(
+    name = "build.config.ti.generated",
+    srcs = [
+        # do not sort
+        "//ti-linux-kernel:set_kernel_dir_build_config",
+        "build.config.ti",
+        "//ti-linux-kernel:build.config.constants",
+    ],
+    visibility = [
+        "//private/devices/ti:__subpackages__",
+    ],
+)
+
+kernel_build(
+    name = "ti",
+    srcs = [
+        "//ti-linux-kernel:kernel_aarch64_sources",
+    ],
+    outs = TI_DTBS + TI_DTBOS,
+    base_kernel = "//common:kernel_aarch64_download_or_build",
+    build_config = ":target_build_config",
+    collect_unstripped_modules = True,
+    defconfig = "//common:arch/arm64/configs/gki_defconfig",
+    kmi_symbol_list = "//common:gki/aarch64/symbols/ti",
+    make_goals = [
+        "modules",
+        "ti/k3-am625-sk.dtb",
+        "ti/k3-am625-beagleplay.dtb",
+        "ti/k3-am62-lp-sk.dtb",
+        "ti/k3-am62p5-sk.dtb",
+        "ti/k3-am62p5-sk-m2-cc3351.dtbo",
+        "ti/k3-am62x-sk-csi2-ov5640.dtbo",
+        "ti/k3-am62x-sk-csi2-tevi-ov5640.dtbo",
+        "ti/k3-am62x-sk-hdmi-audio.dtbo",
+        "ti/k3-am62x-sk-lpm-wkup-sources.dtbo",
+        "ti/k3-am625-sk-microtips-mf101hie-panel.dtbo",
+        "ti/k3-am625-sk-m2-cc3351.dtbo",
+        "ti/k3-am625-sk-wl1837.dtbo",
+        "ti/k3-am625-beagleplay-csi2-ov5640.dtbo",
+        "ti/k3-am625-beagleplay-csi2-tevi-ov5640.dtbo",
+        "ti/k3-am625-beagleplay-lincolntech-lcd185-panel.dtbo",
+        "ti/k3-am62-lp-sk-microtips-mf101hie-panel.dtbo",
+        "ti/k3-am62p5-sk-mcan.dtbo",
+        "ti/k3-am62p5-sk-microtips-mf101hie-panel.dtbo",
+        "ti/k3-am62p5-sk-dsi-rpi-7inch-panel.dtbo",
+        "ti/k3-am67a-beagley-ai.dtb",
+        "ti/k3-j722s-evm.dtb",
+        "ti/k3-j722s-evm-csi2-quad-rpi-cam-imx219.dtbo",
+        "ti/k3-j722s-evm-csi2-quad-tevi-ov5640.dtbo",
+        "ti/k3-j722s-evm-dsi-rpi-7inch-panel.dtbo",
+        "ti/k3-j722s-evm-fpdlink-fusion.dtbo",
+        "ti/k3-j722s-evm-microtips-mf101hie-panel.dtbo",
+        "ti/k3-j722s-evm-v3link-fusion.dtbo",
+        "ti/k3-j722s-evm-pwm.dtbo",
+    ],
+    makefile = "//ti-linux-kernel:Makefile",
+    module_outs = TI_IN_TREE_MODULES,
+    pre_defconfig_fragments = [
+        # do not sort
+        ":ti_fragment",
+    ],
+    protected_module_names_list = "//common:gki_aarch64_protected_module_names",
+    strip_modules = True,
+    visibility = [
+        "//private/devices/ti:__subpackages__",
+    ],
+)
+
+write_file(
+    name = "ti_system_dlkm_modules_list",
+    out = "system_dlkm_modules_list",
+    content = TI_COMMON_GKI_MODULES,
+)
+
+write_file(
+    name = "ti_vendor_dlkm_modules_list",
+    out = "vendor_dlkm_modules.ti",
+    content = TI_VENDOR_DLKM_MODULES,
+)
+
+write_file(
+    name = "ti_vendor_boot_modules_list",
+    out = "vendor_boot_modules.ti",
+    content = TI_VENDOR_BOOT_MODULES + [
+        "pvrsrvkm_am62p.ko",
+        "pvrsrvkm.ko"
+    ],
+)
+
+kernel_modules_install(
+    name = "ti_modules_install",
+    kernel_build = "//:target_kernel_build",
+    kernel_modules = TI_EXTERNAL_MODULES_TARGETS,
+)
+
+kernel_unstripped_modules_archive(
+    name = "ti_unstripped_modules_archive",
+    kernel_build = "//:target_kernel_build",
+    kernel_modules = TI_EXTERNAL_MODULES_TARGETS,
+)
+
+merged_external_kernel_modules_uapi_headers(
+    name = "ti_merged_kernel_uapi_headers",
+    external_modules_kernel_uapi_headers = TI_EXTERNAL_MODULES_DDK_UAPI_HEADERS,
+    merged_kernel_uapi_headers = ":ti_merged_kernel_and_in_tree_uapi_headers",
+)
+
+merged_kernel_uapi_headers(
+    name = "ti_merged_kernel_and_in_tree_uapi_headers",
+    kernel_build = "//:target_kernel_build",
+    kernel_modules = TI_EXTERNAL_MODULES_TARGETS,
+)
+
+kernel_abi(
+    name = "ti_abi",
+    define_abi_targets = True,
+    kernel_build = "//:target_kernel_build",
+    kernel_modules = TI_EXTERNAL_MODULES_TARGETS,
+    kmi_enforced = True,
+    kmi_symbol_list_add_only = True,
+    module_grouping = False,
+    visibility = ["//visibility:public"],
+)
+
+dtbo(
+  name = "ti_dtbo",
+  kernel_build = ":ti",
+  srcs = [
+    ":ti/k3-am62p5-sk-m2-cc3351.dtbo",
+    ":ti/k3-am62x-sk-csi2-ov5640.dtbo",
+    ":ti/k3-am62x-sk-csi2-tevi-ov5640.dtbo",
+    ":ti/k3-am62x-sk-hdmi-audio.dtbo",
+    ":ti/k3-am62x-sk-lpm-wkup-sources.dtbo",
+    ":ti/k3-am625-sk-microtips-mf101hie-panel.dtbo",
+    ":ti/k3-am625-sk-m2-cc3351.dtbo",
+    ":ti/k3-am625-sk-wl1837.dtbo",
+    ":ti/k3-am625-beagleplay-csi2-ov5640.dtbo",
+    ":ti/k3-am625-beagleplay-csi2-tevi-ov5640.dtbo",
+    ":ti/k3-am625-beagleplay-lincolntech-lcd185-panel.dtbo",
+    ":ti/k3-am62-lp-sk-microtips-mf101hie-panel.dtbo",
+    ":ti/k3-am62p5-sk-mcan.dtbo",
+    ":ti/k3-am62p5-sk-microtips-mf101hie-panel.dtbo",
+    ":ti/k3-am62p5-sk-dsi-rpi-7inch-panel.dtbo",
+    ":ti/k3-j722s-evm-csi2-quad-rpi-cam-imx219.dtbo",
+    ":ti/k3-j722s-evm-csi2-quad-tevi-ov5640.dtbo",
+    ":ti/k3-j722s-evm-dsi-rpi-7inch-panel.dtbo",
+    ":ti/k3-j722s-evm-fpdlink-fusion.dtbo",
+    ":ti/k3-j722s-evm-microtips-mf101hie-panel.dtbo",
+    ":ti/k3-j722s-evm-v3link-fusion.dtbo",
+    ":ti/k3-j722s-evm-pwm.dtbo"
+    ],
+)
+initramfs(
+  name = "ti_initramfs",
+  kernel_modules_install = ":ti_modules_install",
+  ramdisk_compression = "lz4",
+  deps = [":file_contexts"],
+  modules_list = ":ti_vendor_boot_modules_list",
+  vendor_boot_name = "vendor_boot",
+)
+
+vendor_dlkm_image(
+  name = "ti_vendor_dlkm_image",
+  kernel_modules_install = ":ti_modules_install",
+  deps = [":file_contexts"],
+  build_flatten = True,
+  modules_list = ":ti_vendor_dlkm_modules_list",
+  props = "vendor_dlkm.props.ti",
+)
+
+pkg_files(
+    name = "ti_vendor_dlkm_image_pkg_files",
+    srcs = [":ti_vendor_dlkm_image"],
+    prefix = "vendor_dlkm",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+system_dlkm_image(
+  name = "ti_system_dlkm_image",
+  kernel_modules_install = ":ti_modules_install",
+  deps = [":system_file_contexts"],
+  base = "//common:kernel_aarch64_images_download_or_build",
+  build_flatten = True,
+  modules_list = ":ti_system_dlkm_modules_list",
+  modules_blocklist = None,
+  fs_types = ["ext4"],
+  props = "system_dlkm.props.ti",
+)
+
+pkg_files(
+    name = "ti_system_dlkm_pkg_files",
+    srcs = [
+        ":ti_system_dlkm_image",
+    ],
+    prefix = "system_dlkm",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+pkg_files(
+    name = "ti_vendor_dlkm_pkg_files",
+    srcs = [
+        ":ti_vendor_dlkm_image",
+    ],
+    prefix = "vendor_dlkm",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+pkg_files(
+    name = "ti_system_dlkm_modules_pkg_files",
+    srcs = ["//common:kernel_aarch64/" + m for m in TI_COMMON_GKI_MODULES],
+    prefix = "system_dlkm",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+pkg_files(
+    name = "ti_vendor_dlkm_modules_pkg_files",
+    srcs = [":ti/" + m for m in TI_VENDOR_DLKM_MODULES ],
+    prefix = "vendor_dlkm",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+pkg_files(
+    name = "ti_vendor_boot_modules_pkg_files",
+    srcs = [":ti/" + m for m in TI_VENDOR_BOOT_MODULES] + [":ti_modules_install"],
+    prefix = "ramdisk",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+pkg_files(
+    name = "ti_dtbo_pkg_files",
+    srcs = [":ti_dtbo"],
+    prefix = "dtbo",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+pkg_files(
+    name = "ti_initramfs_pkg_files",
+    srcs = [":ti_initramfs"],
+    prefix = "initramfs",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+pkg_files(
+    name = "ti_modules_pkg_files",
+    srcs = [
+        ":ti_merged_kernel_uapi_headers",
+        ":ti_modules_install",
+        ":ti_unstripped_modules_archive",
+    ],
+    strip_prefix = strip_prefix.files_only(),
+)
+
+
+ti_dist_targets = [
+        "//:target_kernel_build",
+        "//common:kernel_aarch64_download_or_build",
+        "//common:kernel_aarch64_headers",
+] + ["//common:kernel_aarch64/" + m for m in TI_COMMON_GKI_MODULES]
+
+pkg_files(
+    name = "ti_pkg_files",
+    srcs = ti_dist_targets,
+    strip_prefix = strip_prefix.files_only(),
+    visibility = [
+        "//private/devices/ti:__subpackages__",
+    ],
+)
+
+
+pkg_install(
+    name = "ti_dist",
+    srcs = [
+        ":ti_pkg_files",
+        ":ti_modules_pkg_files",
+        ":ti_system_dlkm_pkg_files",
+        ":ti_vendor_dlkm_pkg_files",
+        ":ti_system_dlkm_modules_pkg_files",
+        ":ti_vendor_dlkm_modules_pkg_files",
+        ":ti_vendor_boot_modules_pkg_files",
+        ":ti_dtbo_pkg_files",
+        ":ti_initramfs_pkg_files",
+    ],
+    destdir = "out/android16-6.12",
+)

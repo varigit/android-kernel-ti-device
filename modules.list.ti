@@ -1,0 +1,18 @@
+# TI kernel modules list
+# This file lists the kernel modules for TI platform
+
+# Essential TI modules
+ti_sci.ko
+k3-udma.ko
+k3-udma-glue.ko
+k3-psil-lib.ko
+k3-ringacc.ko
+ti-am65-cpsw-nuss.ko
+davinci_mdio.ko
+am65-cpts.ko
+sdhci_am654.ko
+dwc3-am62.ko
+tidss.ko
+sa2ul.ko
+optee.ko
+tee.ko
