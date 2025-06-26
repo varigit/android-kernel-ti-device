@@ -128,9 +128,13 @@ TI_VENDOR_BOOT_MODULES = [
 TI_VENDOR_DLKM_MODULES = [
     # keep sorted
     "am65-cpts.ko",
+    "cc33xx.ko",
+    "cc33xx_sdio.ko",
+    "cdns-csi2rx.ko",
     "cdns-dphy-rx.ko",
     "cdns-dphy.ko",
     "cdns-dsi.ko",
+    "cfg80211.ko",
     "dwc3-am62.ko",
     "dwc3-haps.ko",
     "dwc3-of-simple.ko",
@@ -148,6 +152,7 @@ TI_VENDOR_DLKM_MODULES = [
     "k3_bandgap.ko",
     "k3_j72xx_bandgap.ko",
     "leds-tlc591xx.ko",
+    "mac80211.ko",
     "m_can.ko",
     "m_can_platform.ko",
     "mcrc64.ko",
