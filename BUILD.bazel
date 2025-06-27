@@ -688,6 +688,35 @@ pkg_files(
 )
 
 
+# LZ4 compressed kernel image rule for U-Boot compatibility
+genrule(
+    name = "ti_kernel_image_lz4",
+    srcs = ["//common:kernel_aarch64_download_or_build"],
+    outs = ["ti-Image.lz4"],
+    cmd = """
+        # Fallback: find Image and compress it with lz4
+        for f in $(locations //common:kernel_aarch64_download_or_build); do
+            if [[ "$$f" == *"/Image" ]] && [[ "$$f" != *"Image."* ]]; then
+                lz4 -f -12 --favor-decSpeed $$f > $(OUTS)
+                exit 0
+            fi
+        done
+        
+        echo "Error: No Image or Image.lz4 found in kernel build outputs"
+        exit 1
+    """,
+    visibility = [
+        "//private/devices/ti:__subpackages__",
+    ],
+)
+
+pkg_files(
+    name = "ti_kernel_image_lz4_pkg_files",
+    srcs = [":ti_kernel_image_lz4"],
+    prefix = "",
+    strip_prefix = strip_prefix.files_only(),
+)
+
 pkg_install(
     name = "ti_dist",
     srcs = [
@@ -700,6 +729,7 @@ pkg_install(
         ":ti_vendor_boot_modules_pkg_files",
         ":ti_dtbo_pkg_files",
         ":ti_initramfs_pkg_files",
+        ":ti_kernel_image_lz4_pkg_files",
     ],
     destdir = "out/android16-6.12",
 )
