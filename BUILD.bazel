@@ -121,6 +121,7 @@ TI_VENDOR_BOOT_MODULES = [
     "ti-msgmgr.ko",
     "ti_k3_r5_remoteproc.ko",
     "ti_sci.ko",
+    "ti_sci_inta_msi.ko",
     "ti_sci_pm_domains.ko",
     "tidss.ko",
 ]
@@ -326,6 +327,7 @@ TI_IN_TREE_MODULES = [
     "drivers/rtc/rtc-tps6594.ko",
     "drivers/soc/ti/k3-ringacc.ko",
     "drivers/soc/ti/pruss.ko",
+    "drivers/soc/ti/ti_sci_inta_msi.ko",
     "drivers/spi/spi-cadence-quadspi.ko",
     "drivers/spi/spidev.ko",
     "drivers/tee/optee/optee.ko",
