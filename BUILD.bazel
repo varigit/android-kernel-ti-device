@@ -416,8 +416,6 @@ TI_DTBOS = [
     "k3-j722s-evm-pwm.dtbo",
 ]
 
-dtbo_list = TI_DTBOS
-
 # Label `:target_build_config` can be set during build to override the ti.generated
 # build config and append additional sources, like a device-specific
 # build.config.<device> file.
