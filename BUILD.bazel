@@ -556,30 +556,7 @@ kernel_abi(
 dtbo(
   name = "ti_dtbo",
   kernel_build = ":ti",
-  srcs = [
-    ":ti/k3-am62x-sk-hdmi-audio.dtbo",
-    ":ti/k3-am62x-sk-csi2-ov5640.dtbo",
-    ":ti/k3-am62x-sk-csi2-tevi-ov5640.dtbo",
-    ":ti/k3-am625-sk-microtips-mf101hie-panel.dtbo",
-    ":ti/k3-am62x-sk-lpm-wkup-sources.dtbo",
-    ":ti/k3-am62-lp-sk-microtips-mf101hie-panel.dtbo",
-    ":ti/k3-am625-beagleplay-csi2-ov5640.dtbo",
-    ":ti/k3-am625-beagleplay-csi2-tevi-ov5640.dtbo",
-    ":ti/k3-am625-beagleplay-lincolntech-lcd185-panel.dtbo",
-    ":ti/k3-am62p5-sk-mcan.dtbo",
-    ":ti/k3-am62p5-sk-microtips-mf101hie-panel.dtbo",
-    ":ti/k3-am625-sk-m2-cc3351.dtbo",
-    ":ti/k3-am62p5-sk-m2-cc3351.dtbo",
-    ":ti/k3-am625-sk-wl1837.dtbo",
-    ":ti/k3-am62p5-sk-dsi-rpi-7inch-panel.dtbo",
-    ":ti/k3-j722s-evm-csi2-quad-rpi-cam-imx219.dtbo",
-    ":ti/k3-j722s-evm-csi2-quad-tevi-ov5640.dtbo",
-    ":ti/k3-j722s-evm-dsi-rpi-7inch-panel.dtbo",
-    ":ti/k3-j722s-evm-fpdlink-fusion.dtbo",
-    ":ti/k3-j722s-evm-microtips-mf101hie-panel.dtbo",
-    ":ti/k3-j722s-evm-v3link-fusion.dtbo",
-    ":ti/k3-j722s-evm-pwm.dtbo"
-    ],
+  srcs = [ ":ti/" + m for m in TI_DTBOS],
 )
 initramfs(
   name = "ti_initramfs",
