@@ -212,6 +212,7 @@ TI_VENDOR_DLKM_MODULES = [
     "ti_k3_dsp_remoteproc.ko",
     "ti_k3_m4_remoteproc.ko",
     "ti_k3_r5_remoteproc.ko",
+    "virtio_rpmsg_bus.ko",
     "wave5.ko",
     "wl18xx.ko",
     "wlcore.ko",
