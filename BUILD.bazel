@@ -83,6 +83,7 @@ TI_VENDOR_BOOT_MODULES = [
     "8250_omap.ko",
     "cma_heap.ko",
     "cqhci.ko",
+    "cpufreq-dt.ko",
     "davinci_mdio.ko",
     "display-connector.ko",
     "drm_display_helper.ko",
