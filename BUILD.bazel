@@ -764,3 +764,20 @@ pkg_install(
     ],
     destdir = "out/android16-6.12",
 )
+
+pkg_install(
+    name = "variscite_am62p_dist",
+    srcs = [
+        ":ti_pkg_files",
+        ":ti_modules_pkg_files",
+        ":ti_system_dlkm_pkg_files",
+        ":ti_vendor_dlkm_pkg_files",
+        ":ti_system_dlkm_modules_pkg_files",
+        ":ti_vendor_dlkm_modules_pkg_files",
+        ":ti_vendor_boot_modules_pkg_files",
+        ":ti_dtbo_pkg_files",
+        ":ti_initramfs_pkg_files",
+        ":ti_kernel_image_lz4_pkg_files",
+    ],
+    destdir = "out/android16-6.12-variscite-am62p",
+)
