@@ -150,6 +150,7 @@ TI_VENDOR_DLKM_MODULES = [
     "brcmfmac-wcc.ko",
     "brcmfmac.ko",
     "brcmutil.ko",
+    "btnxpuart.ko",
     "cc33xx.ko",
     "cc33xx_sdio.ko",
     "cdns-usb-common.ko",
@@ -241,6 +242,7 @@ TI_VENDOR_DLKM_MODULES = [
 TI_IN_TREE_MODULES = [
     # keep sorted
     "crypto/crc64_iso3309_generic.ko",
+    "drivers/bluetooth/btnxpuart.ko",
     "drivers/char/hw_random/optee-rng.ko",
     "drivers/char/tpm/tpm.ko",
     "drivers/char/tpm/tpm_tis_core.ko",
