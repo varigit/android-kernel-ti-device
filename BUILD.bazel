@@ -414,6 +414,8 @@ TI_EXTERNAL_MODULES_TARGETS = [
     # keep sorted
     "//private/devices/ti/modules/imgtech-ddk-driver:am62p_imgtech_module",
     "//private/devices/ti/modules/imgtech-ddk-driver:am62x_imgtech_module",
+    "//vendor/nxp-opensource/mwifiex:mlan",
+    "//vendor/nxp-opensource/mwifiex:moal",
 ]
 
 TI_EXTERNAL_MODULES_DDK_UAPI_HEADERS = [
@@ -542,6 +544,7 @@ kernel_build(
     strip_modules = True,
     visibility = [
         "//private/devices/ti:__subpackages__",
+        "//vendor/nxp-opensource:__subpackages__",
     ],
 )
 
@@ -554,7 +557,10 @@ write_file(
 write_file(
     name = "ti_vendor_dlkm_modules_list",
     out = "vendor_dlkm_modules.ti",
-    content = TI_VENDOR_DLKM_MODULES,
+    content = TI_VENDOR_DLKM_MODULES + [
+        "mlan.ko",
+        "moal.ko",
+    ],
 )
 
 write_file(
@@ -670,7 +676,10 @@ pkg_files(
 
 pkg_files(
     name = "ti_vendor_dlkm_modules_pkg_files",
-    srcs = [":ti/" + m for m in TI_VENDOR_DLKM_MODULES ],
+    srcs = [":ti/" + m for m in TI_VENDOR_DLKM_MODULES] + [
+        "//vendor/nxp-opensource/mwifiex:mlan",
+        "//vendor/nxp-opensource/mwifiex:moal",
+    ],
     prefix = "vendor_dlkm",
     strip_prefix = strip_prefix.files_only(),
 )
