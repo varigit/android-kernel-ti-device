@@ -444,6 +444,7 @@ TI_DTBS = [
     "k3-am62p5-var-som-symphony-r5.dtb",
     "k3-am62p5-var-som-symphony-dual-clone-display.dtb",
     "k3-am62p5-var-som-symphony-dual-independent-display.dtb",
+    "k3-am625-var-som-symphony.dtb",
 ]
 
 TI_DTBOS = [
@@ -540,6 +541,7 @@ kernel_build(
         "ti/k3-am62p5-var-som-symphony-r5.dtb",
         "ti/k3-am62p5-var-som-symphony-dual-clone-display.dtb",
         "ti/k3-am62p5-var-som-symphony-dual-independent-display.dtb",
+        "ti/k3-am625-var-som-symphony.dtb",
     ],
     makefile = "//ti-linux-kernel:Makefile",
     module_outs = TI_IN_TREE_MODULES,
@@ -800,4 +802,21 @@ pkg_install(
         ":ti_kernel_image_lz4_pkg_files",
     ],
     destdir = "out/android16-6.12-variscite-am62p",
+)
+
+pkg_install(
+    name = "variscite_am62x_dist",
+    srcs = [
+        ":ti_pkg_files",
+        ":ti_modules_pkg_files",
+        ":ti_system_dlkm_pkg_files",
+        ":ti_vendor_dlkm_pkg_files",
+        ":ti_system_dlkm_modules_pkg_files",
+        ":ti_vendor_dlkm_modules_pkg_files",
+        ":ti_vendor_boot_modules_pkg_files",
+        ":ti_dtbo_pkg_files",
+        ":ti_initramfs_pkg_files",
+        ":ti_kernel_image_lz4_pkg_files",
+    ],
+    destdir = "out/android16-6.12-variscite-am62x",
 )
